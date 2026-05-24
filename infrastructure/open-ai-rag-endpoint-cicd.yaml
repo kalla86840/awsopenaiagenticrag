@@ -1,10 +1,10 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: CodePipeline for packaging and deploying the OpenAI RAG real-time endpoint.
+Description: CodePipeline for packaging and deploying the OpenAI agentic RAG real-time endpoint.
 
 Parameters:
   ProjectName:
     Type: String
-    Default: open-ai-rag
+    Default: open-ai-agentic-rag
   ArtifactBucketName:
     Type: String
     Default: mlopswithsagemaker111
