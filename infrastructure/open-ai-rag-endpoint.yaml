@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Real-time AWS Lambda Function URL endpoint for OpenAI multi-agent RAG inference over a text document.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: open-ai-rag
+  ArtifactBucketName:
+    Type: String
+    Default: mlopswithsagemaker111
+  LambdaZipKey:
+    Type: String
+    Default: open-ai-rag/open-ai-rag-endpoint.zip
+  OpenAIApiKeySecretArn:
+    Type: String
+    Default: arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ
+    Description: AWS Secrets Manager secret ARN whose value is the OpenAI API key.
+  OpenAIModel:
+    Type: String
+    Default: gpt-5.2
+
+Resources:
+  RagEndpointRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-rag-endpoint-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${ProjectName}-rag-endpoint-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref OpenAIApiKeySecretArn
+
+  RagEndpointFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-endpoint
+      Runtime: python3.10
+      Handler: app.handler
+      Role: !GetAtt RagEndpointRole.Arn
+      Timeout: 60
+      MemorySize: 512
+      Code:
+        S3Bucket: !Ref ArtifactBucketName
+        S3Key: !Ref LambdaZipKey
+      Environment:
+        Variables:
+          OPENAI_MODEL: !Ref OpenAIModel
+          OPENAI_API_KEY_SECRET_ARN: !Ref OpenAIApiKeySecretArn
+          RAG_KNOWLEDGE_PATH: knowledge/open_ai_rag_knowledge.txt
+          TOP_K: "3"
+          MAX_OUTPUT_TOKENS: "1200"
+
+  RagEndpointUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      AuthType: NONE
+      TargetFunctionArn: !Ref RagEndpointFunction
+      Cors:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - POST
+        AllowHeaders:
+          - content-type
+
+  RagEndpointUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunctionUrl
+      FunctionName: !Ref RagEndpointFunction
+      Principal: "*"
+      FunctionUrlAuthType: NONE
+
+Outputs:
+  EndpointUrl:
+    Value: !GetAtt RagEndpointUrl.FunctionUrl
+  FunctionName:
+    Value: !Ref RagEndpointFunction

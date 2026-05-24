@@ -1,0 +1,18 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_DEFAULT_REGION: us-west-1
+    AWS_REGION: us-west-1
+    AWS_SDK_LOAD_CONFIG: "1"
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.10
+    commands:
+      - pip install --upgrade pip
+      - pip install -r requirements.txt
+  build:
+    commands:
+      - python scripts/approve_model.py --config config/default.yaml

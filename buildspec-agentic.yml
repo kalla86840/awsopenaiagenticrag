@@ -1,0 +1,33 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_DEFAULT_REGION: us-west-1
+    AWS_REGION: us-west-1
+    PROJECT_NAME: agentic-open-ai
+    ARTIFACT_BUCKET: mlopswithsagemaker111
+    OPENAI_MODEL: gpt-5.2
+    OPENAI_API_KEY_SECRET_ARN: arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12
+    commands:
+      - python -m pip install --upgrade pip
+  build:
+    commands:
+      - rm -rf build dist
+      - mkdir -p build dist
+      - python -m pip install -r agentic_endpoint/requirements.txt -t build
+      - cp agentic_endpoint/app.py agentic_endpoint/agent_profiles.yaml agentic_endpoint/hospital_agentic_rag_knowledge.txt build/
+      - cd build && zip -r ../dist/agentic-endpoint.zip . && cd ..
+      - aws s3 cp dist/agentic-endpoint.zip "s3://${ARTIFACT_BUCKET}/${PROJECT_NAME}/lambda/agentic-endpoint.zip"
+      - aws cloudformation deploy --template-file infrastructure/agentic-endpoint.yaml --stack-name "${PROJECT_NAME}-agentic-endpoint" --capabilities CAPABILITY_NAMED_IAM --parameter-overrides ProjectName="${PROJECT_NAME}" ArtifactBucketName="${ARTIFACT_BUCKET}" LambdaS3Key="${PROJECT_NAME}/lambda/agentic-endpoint.zip" OpenAIApiKeySecretArn="${OPENAI_API_KEY_SECRET_ARN}" OpenAIModel="${OPENAI_MODEL}"
+      - aws lambda invoke --function-name "${PROJECT_NAME}-agentic-endpoint" --payload fileb://samples/agentic_hospital_request.json dist/agentic-sample-response.json
+      - python -c "import json; body=json.load(open('dist/agentic-sample-response.json')); assert body.get('statusCode') == 200, body; print('Agentic RAG endpoint smoke test passed')"
+
+artifacts:
+  files:
+    - dist/agentic-endpoint.zip
+    - dist/agentic-sample-response.json

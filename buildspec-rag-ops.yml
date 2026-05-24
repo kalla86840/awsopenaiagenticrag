@@ -1,0 +1,27 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_DEFAULT_REGION: us-west-1
+    AWS_REGION: us-west-1
+    AWS_SDK_LOAD_CONFIG: "1"
+    DEPLOY_ENVIRONMENT: staging
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.10
+    commands:
+      - pip install --upgrade pip
+      - pip install -r requirements.txt
+  build:
+    commands:
+      - |
+        if [ -z "$OPENAI_API_KEY" ]; then
+          echo "OPENAI_API_KEY is required for RAG Ops endpoint inference."
+          exit 1
+        fi
+        python scripts/rag_ops_invoke_endpoint.py \
+          --config config/default.yaml \
+          --environment "$DEPLOY_ENVIRONMENT" \
+          --query "Use the standard no-debt default and numeric gender encoding for a 28 year old customer with vehicle mileage of 23 and income of 4099, then estimate sales."

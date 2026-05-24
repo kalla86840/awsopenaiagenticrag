@@ -1,0 +1,112 @@
+{
+  "endpoint_reference": {
+    "type": "AWS Lambda Function URL",
+    "stack": "agentic-open-ai-agentic-endpoint",
+    "cloudformation_output": "AgenticFunctionUrl",
+    "auth": "AWS_IAM",
+    "method": "POST",
+    "content_type": "application/json"
+  },
+  "request_file": "samples/agentic_hospital_request.json",
+  "sample_response": {
+    "task": "Use RAG-grounded hospital, doctor, and nurse agents to create a real-time care-coordination inference for an acute ED patient.",
+    "retrieved_context": [
+      {
+        "id": "hospital-rag-7",
+        "title": "Sample Event Pattern: ED Chest Pressure and Dyspnea",
+        "source": "hospital_agentic_rag_knowledge.txt",
+        "content": "# Sample Event Pattern: ED Chest Pressure and Dyspnea\nA 64-year-old patient in ED bay 4 with chest pressure, shortness of breath for two hours, heart rate 118, blood pressure 92/58, oxygen saturation 89, respiratory rate 26, elevated cardiac risk, and limited monitored-bed capacity should be treated as an emergent coordination event. Recommended coordination includes monitored placement, urgent clinician review, ECG or rhythm review, oxygen and vital-sign monitoring per protocol, pending lab tracking, bed coordinator notification, and medication-history reconciliation when immediate monitoring is stable."
+      },
+      {
+        "id": "hospital-rag-5",
+        "title": "Nurse Agent Guidance",
+        "source": "hospital_agentic_rag_knowledge.txt",
+        "content": "# Nurse Agent Guidance\nThe nurse agent converts the operational and clinical review into bedside-ready handoff. It should prioritize monitoring, patient preparation, safety precautions, documentation, family or medication-history follow-up, and practical next actions. It should name signals that need close observation, such as oxygen saturation, blood pressure, heart rate, rhythm changes, pain trend, fever, mental status, fall risk, and work of breathing."
+      },
+      {
+        "id": "hospital-rag-2",
+        "title": "Agentic Task Contract",
+        "source": "hospital_agentic_rag_knowledge.txt",
+        "content": "# Agentic Task Contract\nThe endpoint task is to create a real-time care-coordination inference for a hospital event. Agent 1 is hospital operations, Agent 2 is doctor review, and Agent 3 is nurse handoff. The final coordinator response must synthesize the three agent outputs into case_summary, care_team_consensus, recommended_actions, signals_to_monitor, escalation_level, and handoff."
+      },
+      {
+        "id": "hospital-rag-6",
+        "title": "Escalation Mapping",
+        "source": "hospital_agentic_rag_knowledge.txt",
+        "content": "# Escalation Mapping\nUse routine when the event is stable and has no immediate deterioration signal. Use urgent when a clinician should review promptly because of abnormal vitals, positive screens, capacity constraints, or worsening symptoms. Use emergent when multiple high-risk signals are present, such as oxygen saturation below 90, systolic blood pressure below 100 with symptoms, chest pressure with respiratory distress, severe mental-status change, repeated rhythm alerts with symptoms, or sepsis screen with instability."
+      }
+    ],
+    "agents": [
+      {
+        "agent": "hospital",
+        "result": {
+          "summary": "ED patient with chest pressure, dyspnea, hypoxia, tachycardia, and low blood pressure requires monitored-bed coordination and immediate operational prioritization.",
+          "findings": [
+            "Acuity is high because oxygen saturation is 89% with respiratory distress symptoms.",
+            "Limited monitored-bed capacity is an operational constraint that should be escalated early.",
+            "Medication history and family collateral are available but not yet reconciled."
+          ],
+          "next_actions": [
+            "Route to monitored emergency bay or equivalent high-observation setting.",
+            "Notify charge nurse and bed coordinator about monitored-bed need.",
+            "Confirm ordered labs and imaging workflow status."
+          ],
+          "risk_level": "high"
+        }
+      },
+      {
+        "agent": "doctor",
+        "result": {
+          "summary": "Clinical review should prioritize urgent evaluation of cardiopulmonary causes while avoiding unsupported diagnostic certainty.",
+          "findings": [
+            "Chest pressure plus shortness of breath, tachycardia, hypoxia, and hypotension are concerning for acute cardiopulmonary deterioration.",
+            "History of hypertension and diabetes increases concern and supports urgent clinician review.",
+            "Troponin and BNP are appropriate pending data points but should not delay bedside assessment."
+          ],
+          "next_actions": [
+            "Request immediate physician assessment and ECG review.",
+            "Trend vital signs and oxygen response closely.",
+            "Prepare for escalation if oxygen saturation or blood pressure worsens."
+          ],
+          "risk_level": "critical"
+        }
+      },
+      {
+        "agent": "nurse",
+        "result": {
+          "summary": "Bedside handoff should focus on oxygen support, continuous monitoring, rapid clinician notification, and clear documentation of symptom timing.",
+          "findings": [
+            "Patient needs continuous pulse oximetry and frequent blood pressure reassessment.",
+            "Family can help complete medication history once immediate monitoring is stabilized.",
+            "Pain score, dyspnea severity, and walking-related worsening should be included in the handoff."
+          ],
+          "next_actions": [
+            "Place on continuous monitoring and follow local oxygen protocol.",
+            "Keep patient on fall precautions due to hypoxia and low blood pressure risk.",
+            "Document time of symptom onset and response to initial interventions."
+          ],
+          "risk_level": "critical"
+        }
+      }
+    ],
+    "inference": {
+      "case_summary": "A 64-year-old ED patient arrived by ambulance with two hours of chest pressure and shortness of breath, oxygen saturation of 89%, heart rate 118, and blood pressure 92/58.",
+      "care_team_consensus": "All agents agree this is a high-priority real-time coordination event requiring monitored placement, urgent clinician review, and bedside readiness for escalation.",
+      "recommended_actions": [
+        "Move or keep the patient in a monitored emergency setting.",
+        "Notify physician, charge nurse, and bed coordinator immediately.",
+        "Continue oxygen and vital-sign monitoring per hospital protocol.",
+        "Track pending troponin, BNP, ECG, and medication-history reconciliation."
+      ],
+      "signals_to_monitor": [
+        "Oxygen saturation trend",
+        "Blood pressure trend",
+        "Heart rate and rhythm changes",
+        "Chest pressure severity",
+        "New altered mental status or increased work of breathing"
+      ],
+      "escalation_level": "emergent",
+      "handoff": "ED bay 4 patient P-10482 has chest pressure, dyspnea, hypoxia, tachycardia, and low blood pressure. Monitoring and urgent clinician review are active priorities; labs are pending and family can support medication reconciliation."
+    }
+  }
+}

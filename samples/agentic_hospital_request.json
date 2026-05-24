@@ -1,0 +1,37 @@
+{
+  "task_id": "agentic-hospital-triage-001",
+  "task": "Use RAG-grounded hospital, doctor, and nurse agents to create a real-time care-coordination inference for an acute ED patient.",
+  "agents": ["hospital", "doctor", "nurse"],
+  "rag_top_k": 4,
+  "patient_context": {
+    "patient_id": "P-10482",
+    "age": 64,
+    "sex": "female",
+    "location": "ED bay 4",
+    "arrival_mode": "ambulance",
+    "acuity": "ESI-2"
+  },
+  "chief_concern": "Shortness of breath and chest pressure for two hours.",
+  "vitals": {
+    "heart_rate": 118,
+    "blood_pressure": "92/58",
+    "oxygen_saturation": 89,
+    "respiratory_rate": 26,
+    "temperature_f": 99.1,
+    "pain_score": 7
+  },
+  "signals": {
+    "fall_risk": false,
+    "sepsis_screen": "watch",
+    "cardiac_risk": "elevated",
+    "bed_capacity_status": "limited monitored beds",
+    "lab_status": "troponin and BNP ordered"
+  },
+  "notes": [
+    "History of hypertension and type 2 diabetes.",
+    "Patient reports worsening symptoms when walking.",
+    "Family is available for medication history."
+  ],
+  "requested_inference": "Coordinate immediate triage, clinical review, and bedside handoff priorities.",
+  "max_output_tokens": 1400
+}

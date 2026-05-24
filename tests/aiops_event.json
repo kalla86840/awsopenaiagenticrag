@@ -1,0 +1,17 @@
+{
+  "profile": "incident_triage",
+  "service": "checkout-api",
+  "environment": "production",
+  "event": "HTTP 5xx rate increased from 0.2% to 8.7% after the latest deployment.",
+  "metrics": {
+    "p95_latency_ms": 2400,
+    "error_rate_percent": 8.7,
+    "cpu_percent": 72
+  },
+  "logs": [
+    "TimeoutError: payment provider request exceeded 2000ms",
+    "deployment_id=2026-05-23.17 service=checkout-api version=9f31"
+  ],
+  "runbook_context": "Rollback is available through CodeDeploy. Payment provider status page currently shows degraded latency.",
+  "prompt_notes": "Keep output short enough for an on-call Slack message."
+}

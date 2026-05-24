@@ -1,0 +1,9 @@
+{
+  "question": "How do I connect a washer and dryer?",
+  "top_k": 8,
+  "agents": [
+    "manual_retrieval_agent",
+    "procedure_agent",
+    "safety_agent"
+  ]
+}

@@ -1,0 +1,50 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_DEFAULT_REGION: us-west-1
+    AWS_REGION: us-west-1
+    ARTIFACT_BUCKET: mlopswithsagemaker111
+    STACK_NAME: open-ai-rag-endpoint
+    PROJECT_NAME: open-ai-rag
+    OPENAI_MODEL: gpt-5.2
+    OPENAI_API_KEY_SECRET_ARN: arn:aws:secretsmanager:us-west-1:659613508664:secret:openai/api-key-6BGXhJ
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.10
+    commands:
+      - pip install --upgrade pip
+      - mkdir -p package
+      - pip install -r rag_endpoint/requirements.txt -t package
+  build:
+    commands:
+      - cp rag_endpoint/app.py package/app.py
+      - mkdir -p package/knowledge
+      - cp rag_endpoint/knowledge/open_ai_rag_knowledge.txt package/knowledge/open_ai_rag_knowledge.txt
+      - cd package
+      - zip -r ../open-ai-rag-endpoint.zip .
+      - cd ..
+      - aws s3 cp open-ai-rag-endpoint.zip "s3://${ARTIFACT_BUCKET}/open-ai-rag/open-ai-rag-endpoint.zip"
+      - |
+        aws cloudformation deploy \
+          --region "$AWS_REGION" \
+          --template-file infrastructure/open-ai-rag-endpoint.yaml \
+          --stack-name "$STACK_NAME" \
+          --capabilities CAPABILITY_NAMED_IAM \
+          --parameter-overrides \
+            ProjectName="$PROJECT_NAME" \
+            ArtifactBucketName="$ARTIFACT_BUCKET" \
+            LambdaZipKey=open-ai-rag/open-ai-rag-endpoint.zip \
+            OpenAIApiKeySecretArn="$OPENAI_API_KEY_SECRET_ARN" \
+            OpenAIModel="$OPENAI_MODEL"
+      - aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs" --output table
+      - ENDPOINT_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='EndpointUrl'].OutputValue | [0]" --output text)
+      - curl -sS -f -X POST "$ENDPOINT_URL" -H "content-type: application/json" -d @samples/open_ai_rag_endpoint_request.json -o open-ai-rag-endpoint-smoke-response.json
+      - python -c "import json; body=json.load(open('open-ai-rag-endpoint-smoke-response.json')); assert body.get('answer') and len(body.get('agents', [])) == 3, body; print('OpenAI multi-agent RAG endpoint smoke test passed')"
+
+artifacts:
+  files:
+    - open-ai-rag-endpoint.zip
+    - open-ai-rag-endpoint-smoke-response.json

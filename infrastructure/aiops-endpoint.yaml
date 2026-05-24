@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: OpenAI Prompt Ops AIOps Lambda endpoint.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: openai-prompt-ops
+  ArtifactBucketName:
+    Type: String
+    Description: S3 bucket containing the packaged Lambda artifact.
+  LambdaS3Key:
+    Type: String
+    Description: S3 key for the packaged Lambda zip.
+  OpenAIApiKeySecretArn:
+    Type: String
+    Description: Secrets Manager ARN containing the OpenAI API key.
+  OpenAIModel:
+    Type: String
+    Default: gpt-5.2
+
+Resources:
+  AiOpsFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-aiops-lambda-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${ProjectName}-aiops-lambda-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref OpenAIApiKeySecretArn
+
+  AiOpsFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-aiops-endpoint
+      Role: !GetAtt AiOpsFunctionRole.Arn
+      Runtime: python3.12
+      Handler: app.lambda_handler
+      Timeout: 60
+      MemorySize: 512
+      Code:
+        S3Bucket: !Ref ArtifactBucketName
+        S3Key: !Ref LambdaS3Key
+      Environment:
+        Variables:
+          OPENAI_API_KEY_SECRET_ARN: !Ref OpenAIApiKeySecretArn
+          OPENAI_MODEL: !Ref OpenAIModel
+          MAX_OUTPUT_TOKENS: "1200"
+
+  AiOpsFunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !Ref AiOpsFunction
+      AuthType: AWS_IAM
+      Cors:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - POST
+        AllowHeaders:
+          - content-type
+          - authorization
+          - x-amz-date
+          - x-amz-security-token
+
+  AiOpsFunctionUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AiOpsFunction
+      Action: lambda:InvokeFunctionUrl
+      Principal: "*"
+      FunctionUrlAuthType: AWS_IAM
+
+Outputs:
+  AiOpsFunctionName:
+    Value: !Ref AiOpsFunction
+  AiOpsFunctionUrl:
+    Value: !GetAtt AiOpsFunctionUrl.FunctionUrl

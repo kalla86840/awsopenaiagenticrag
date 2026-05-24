@@ -1,0 +1,20 @@
+{
+  "patient_context": {
+    "age": 64,
+    "location": "emergency department",
+    "arrival_mode": "ambulance"
+  },
+  "chief_concern": "Shortness of breath and chest pressure for two hours.",
+  "vitals": {
+    "heart_rate": 118,
+    "blood_pressure": "92/58",
+    "oxygen_saturation": 89,
+    "temperature_f": 99.1
+  },
+  "notes": [
+    "History of hypertension.",
+    "Patient reports worsening symptoms when walking.",
+    "Family is available for medication history."
+  ],
+  "requested_inference": "Coordinate immediate triage, clinical review, and bedside handoff priorities."
+}
